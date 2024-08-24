@@ -26,10 +26,33 @@ let bottomRightDiv;
 let laserWidth = window.innerHeight/100;
 let previousTime;
 let deltaTime;
+let deltaFrames;
 let callsPerFrame = 5;
 let speedMultiplier = 1;
 let speedMultiplierOptions = [0.1, 0.25, 0.5, 1, 2, 3, 5];
 let playerTargetCoordinates = [{},{}];
+
+// Get the canvas element by its ID
+const canvas = document.getElementById('myCanvas');
+let ctx;
+
+//Initializes the canvas stuff
+window.onload = function() {
+    ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    function resizeCanvas() {
+        var ratio = window.devicePixelRatio || 1;
+        canvas.width = window.innerHeight*1.2 * ratio;
+        canvas.height = window.innerHeight * 0.7 * ratio;
+        canvas.style.width = '120vh';
+        canvas.style.height = '70vh';
+        ctx.scale(ratio, ratio);
+    }
+
+    resizeCanvas();
+}
 
 let resetGrid = (eventListener = true) => {
     let elements = document.querySelectorAll('#gameBoard > .gridSquare');
@@ -138,16 +161,12 @@ let laser = () => {
     let playerX = Player.instances[choosing/10-1].x;
     let playerY = Player.instances[choosing/10-1].y;
     let playerYB = Player.instances[choosing/10-1].element.getYB(gameBoard) + playerWidth/2;
-    let laser = document.createElement('div');
-    laser.classList.add('testingLaser');
-    laser.style.left = `${playerX}px`;
-    laser.style.top = `${playerY - window.innerHeight/200}px`;
-    gameBoard.appendChild(laser);
     let value;
     let hDirection;
     let vDirection;
 
     let handleMouseMove = (event) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         if(mirrorsRemaining != 0) {
             gameBoard.removeEventListener('mousemove', handleMouseMove);
             gameBoard.removeEventListener('click', handleClick);
@@ -155,17 +174,16 @@ let laser = () => {
         }
         let x = event.clientX - gameBoard.getX();
         let y = gameBoard.offsetHeight - (event.clientY - gameBoard.getY());
-        let angle = -Math.atan((y - playerYB)/(x - playerX))/Math.PI*180;
-        value = (y - playerYB)/(x - playerX);
+        value = Math.abs((y - playerYB)/(x - playerX));
+        if(value == Infinity) {
+            return;
+        }
         hDirection = (x-playerX)/Math.abs(x-playerX);
         vDirection = -(y - playerYB)/Math.abs(y - playerYB);
-        if(x-playerX < 0) {
-            angle = 180 + angle;
-        }
-
-        laser.style.transform = `rotate(${angle}deg)`;
+        new Laser(playerX, playerY, value, hDirection, vDirection, 'TESTING', choosing/10-1);
     }
     let handleClick = () => {
+        console.log(mirrorsRemaining);
         if(mirrorsRemaining != 0) {
             gameBoard.removeEventListener('mousemove', handleMouseMove);
             gameBoard.removeEventListener('click', handleClick);
@@ -176,8 +194,7 @@ let laser = () => {
             hDirection: hDirection,
             vDirection: vDirection
         });
-        laser.style.opacity = 0;
-        laser.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         gameBoard.removeEventListener('mousemove', handleMouseMove);
         gameBoard.removeEventListener('click', handleClick);
         choosing /= 10;
@@ -239,14 +256,14 @@ let gameplay = () => {
                     if(index >= mirrorsOwned[1].length) {
                         clearInterval(interval);
                         setTimeout(() => {
-                            document.querySelectorAll('.testingLaser')[0].fadeIn(undefined, 'flex');
+                            new Laser(Player.instances[0].x, Player.instances[0].y, laserSlopes[0].value, laserSlopes[0].hDirection, laserSlopes[0].vDirection, 'TESTING', 0);
                             setTimeout(() => {
-                                document.querySelectorAll('.testingLaser')[1].fadeIn(undefined, 'flex');
+                                new Laser(Player.instances[1].x, Player.instances[1].y, laserSlopes[1].value, laserSlopes[1].hDirection, laserSlopes[1].vDirection, 'TESTING', 1);
                                 setTimeout(() => {
-                                    document.querySelectorAll('.testingLaser').forEach(joe => {joe.fadeOut()});
+                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                                     setTimeout(() => {
                                         shootLasers();
-                                    },750);
+                                    },100);
                                 },1500);
                             },1000);
                         },500);

@@ -132,3 +132,11 @@ body > div:nth-child(3) {
 #topInfo {
     font-size: 2rem;
 }
+
+canvas {
+    position: absolute;
+    height: 70vh;
+    width: 120vh;
+    z-index: 100;
+    pointer-events: none;
+}
